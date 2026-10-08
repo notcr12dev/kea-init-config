@@ -1,0 +1,11 @@
+debian/files
+debian/.debhelper/
+debian/kea-config-init/
+debian/*.log
+debian/*.substvars
+debian/*.debhelper
+*.build
+*.buildinfo
+*.changes
+*.dsc
+*.tar.*

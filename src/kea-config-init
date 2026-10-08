@@ -1,0 +1,203 @@
+#!/bin/bash
+# kea-config-init - Autoconfigura /etc/kea/kea-dhcp4.conf
+# Guarda una copia del fichero por defecto en /etc/kea/kea-dhcp4.conf.bak
+set -euo pipefail
+
+CONFIG_FILE="/etc/kea/kea-dhcp4.conf"
+BACKUP_FILE="/etc/kea/kea-dhcp4.conf.bak"
+
+usage() {
+    cat <<'USAGE'
+Uso: kea-config-init [--restore] [--help]
+
+  Sin argumentos : hace backup a .bak (si no existe) y escribe la
+                   configuración DHCPv4 personalizada en /etc/kea/kea-dhcp4.conf
+  --restore      : restaura la configuración original desde el .bak
+  --help, -h     : muestra esta ayuda
+USAGE
+}
+
+restore_backup() {
+    if [ ! -f "$BACKUP_FILE" ]; then
+        echo "ERROR: no existe backup en $BACKUP_FILE" >&2
+        exit 1
+    fi
+    cp -a "$BACKUP_FILE" "$CONFIG_FILE"
+    echo "Restaurado $CONFIG_FILE desde $BACKUP_FILE"
+}
+
+if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
+    usage
+    exit 0
+fi
+
+if [ "${1:-}" = "--restore" ]; then
+    if [ "$(id -u)" -ne 0 ]; then
+        echo "ERROR: necesitas root (usa sudo)." >&2
+        exit 1
+    fi
+    restore_backup
+    exit 0
+fi
+
+if [ "$(id -u)" -ne 0 ]; then
+    echo "ERROR: necesitas root (usa sudo kea-config-init)." >&2
+    exit 1
+fi
+
+mkdir -p "$(dirname "$CONFIG_FILE")"
+
+# 1) Backup del archivo por defecto (solo la primera vez, no sobrescribir)
+if [ -f "$CONFIG_FILE" ]; then
+    if [ ! -f "$BACKUP_FILE" ]; then
+        cp -a "$CONFIG_FILE" "$BACKUP_FILE"
+        echo "Backup creado: $BACKUP_FILE"
+    else
+        echo "Backup ya existe, se conserva: $BACKUP_FILE"
+    fi
+else
+    echo "AVISO: no existía $CONFIG_FILE, se creará de cero."
+fi
+
+# 2) Escribir la configuración personalizada
+cat > "$CONFIG_FILE" <<'KEA_EOF'
+{
+
+// DHCPv4 configuration starts here. This section will be read by DHCPv4 server
+// and will be ignored by other components.
+"Dhcp4": {
+    "interfaces-config": {
+        
+        "interfaces": ["enp0s3"]  
+    },
+
+    "control-socket": {
+        "socket-type": "unix",
+        "socket-name": "/run/kea/kea4-ctrl-socket"
+    },
+    
+    "lease-database": {
+        "type": "memfile",
+        "lfc-interval": 3600
+    },
+
+    "expired-leases-processing": {
+        "reclaim-timer-wait-time": 10,
+        "flush-reclaimed-timer-wait-time": 25,
+        "hold-reclaimed-time": 3600,
+        "max-reclaim-leases": 100,
+        "max-reclaim-time": 250,
+        "unwarned-reclaim-cycles": 5
+    },
+
+    "renew-timer": 900,
+    "rebind-timer": 1800,
+    "valid-lifetime": 3600,
+
+    "option-data": [
+        
+        {
+            "name": "domain-name-servers",
+            "data": "8.8.8.8"
+        },
+
+        
+        {
+            "code": 15,
+            "data": "example.org"
+        },
+
+       
+        {
+            "name": "domain-search",
+            "data": "mydomain.example.com, example.com"
+        },
+
+        {
+            "name": "boot-file-name",
+            "data": "EST5EDT4\\,M3.2.0/02:00\\,M11.1.0/02:00"
+        },
+        
+        {
+            "name": "default-ip-ttl",
+            "data": "0xf0"
+        }
+        
+    ],
+
+        
+    "subnet4": [
+        {
+            "id": 1,
+            "subnet": "192.168.1.0/24",
+
+            "pools": [ { "pool": "192.168.1.10 - 192.168.1.200" } ],
+           
+            "option-data": [
+                {
+                    "name": "routers",
+                    "data": "192.168.1.1"
+                },
+                {
+                    "name": "domain-name-servers",
+                    "data": "8.8.8.8"
+                }
+            ],
+            // --------------------------------------------------------
+            // RESERVES D'IP FIXES (IP-MAC ENLLAÇADES EN KEA)
+            // --------------------------------------------------------
+            "reservations": [
+                {
+                    "hw-address": "00:11:22:33:44:55",
+                    "ip-address": "192.168.1.10",
+                    "hostname": "servidor-web"
+                },
+                {
+                    "hw-address": "a1:b2:c3:d4:e5:f6",
+                    "ip-address": "192.168.1.11",
+                    "hostname": "impressora-oficina"
+                },
+                {
+                    "hw-address": "aa:bb:cc:dd:ee:ff",
+                    "ip-address": "192.168.1.12",
+                    "hostname": "portatil-profe"
+                }
+            ]
+   
+        }
+      ]
+  }
+}
+KEA_EOF
+
+# 3) Permisos: 640, grupo _kea si existe (usuario de Kea en Ubuntu)
+if getent group _kea >/dev/null 2>&1; then
+    chown root:_kea "$CONFIG_FILE"
+else
+    chown root:root "$CONFIG_FILE"
+fi
+chmod 640 "$CONFIG_FILE"
+[ -f "$BACKUP_FILE" ] && chmod 640 "$BACKUP_FILE" || true
+
+echo "Configuración escrita en: $CONFIG_FILE"
+
+# 4) Validar sintaxis si kea-dhcp4 está instalado
+if command -v kea-dhcp4 >/dev/null 2>&1; then
+    if kea-dhcp4 -t "$CONFIG_FILE"; then
+        echo "Validación OK (kea-dhcp4 -t)."
+    else
+        echo "AVISO: kea-dhcp4 -t reportó errores, revisa el fichero." >&2
+    fi
+else
+    echo "AVISO: kea-dhcp4 no instalado, no se pudo validar. Instala kea-dhcp4-server."
+fi
+
+# 5) Intentar recargar el servicio si existe (sin fallar si no hay systemd)
+if command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then
+    if systemctl list-unit-files 2>/dev/null | grep -q '^kea-dhcp4-server'; then
+        echo "Reiniciando kea-dhcp4-server..."
+        systemctl restart kea-dhcp4-server || echo "AVISO: no se pudo reiniciar el servicio." >&2
+    fi
+fi
+
+echo "Listo. Backup en: $BACKUP_FILE (restaura con: sudo kea-config-init --restore)"

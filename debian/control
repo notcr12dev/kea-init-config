@@ -1,0 +1,19 @@
+Source: kea-config-init
+Section: net
+Priority: optional
+Maintainer: jhonpork445566 <cristianmupc2025@hotmail.com>
+Build-Depends: debhelper-compat (= 13)
+Standards-Version: 4.6.2
+Homepage: https://github.com/notcr12dev/kea-config-init
+Rules-Requires-Root: no
+
+Package: kea-config-init
+Architecture: all
+Depends: bash, kea-dhcp4-server | isc-kea-dhcp4-server, ${misc:Depends}
+Description: Autoconfigurador de Kea DHCPv4 (192.168.1.0/24 + reservas)
+ Al ejecutar /usr/sbin/kea-config-init se guarda un backup del
+ fichero por defecto en /etc/kea/kea-dhcp4.conf.bak (solo la primera
+ vez) y se escribe una configuración DHCPv4 lista para usar:
+ interfaz enp0s3, lease-database memfile, timers, option-data y
+ subnet 192.168.1.0/24 con pool .10-.200 y 3 reservas IP-MAC.
+ Restaura el original con: sudo kea-config-init --restore

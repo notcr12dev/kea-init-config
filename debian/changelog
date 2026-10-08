@@ -1,0 +1,7 @@
+kea-config-init (1.0.0) noble; urgency=medium
+
+  * Initial release for PPA: kea-config-init autoconfigura
+    /etc/kea/kea-dhcp4.conf con backup .bak, subnet 192.168.1.0/24
+    y 3 reservas IP-MAC.
+
+ -- jhonpork445566 <cristianmupc2025@hotmail.com>  Tue, 07 Oct 2026 10:00:00 +0000

@@ -1,0 +1,9 @@
+#!/bin/sh
+set -e
+# No autoconfiguramos en postinst: el usuario debe lanzar kea-config-init a mano.
+# Solo informamos.
+echo "kea-config-init instalado. Ejecuta: sudo kea-config-init"
+echo "  - Crea /etc/kea/kea-dhcp4.conf.bak (si no existe)"
+echo "  - Escribe la config en /etc/kea/kea-dhcp4.conf"
+#DEBHELPER#
+exit 0

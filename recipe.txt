@@ -1,0 +1,2 @@
+# git-build-recipe format 0.4 deb-version 1.0.0+git{revno}
+lp:~jhonpork445566/+git/kea-init-config
