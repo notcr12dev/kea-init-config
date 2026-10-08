@@ -11,6 +11,11 @@ base: core24
 grade: stable
 confinement: classic
 license: GPL-3.0-or-later
+title: Kea DHCPv4 Autoconfigurator
+contact: cristianmupc2025@hotmail.com
+website: https://github.com/notcr12dev/kea-init-config
+source-code: https://github.com/notcr12dev/kea-init-config
+issues: https://github.com/notcr12dev/kea-init-config/issues
 
 apps:
   kea-config-init:
