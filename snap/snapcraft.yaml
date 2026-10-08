@@ -1,0 +1,28 @@
+name: kea-config-init
+version: '1.0.1'
+summary: Autoconfigura Kea DHCPv4 (backup .bak + reservas)
+description: |
+  Al ejecutar `kea-config-init` guarda un backup del fichero por
+  defecto en /etc/kea/kea-dhcp4.conf.bak (solo la primera vez) y
+  escribe la configuración DHCPv4: interfaz enp0s3, lease-database
+  memfile, subnet 192.168.1.0/24 con pool .10-.200 y 3 reservas IP-MAC.
+  Requiere confinamiento classic porque escribe en /etc/kea del host.
+base: core24
+grade: stable
+confinement: classic
+license: GPL-3.0-or-later
+
+apps:
+  kea-config-init:
+    command: usr/sbin/kea-config-init
+
+parts:
+  kea-config-init:
+    plugin: dump
+    source: .
+    organize:
+      src/kea-config-init: usr/sbin/kea-config-init
+    stage:
+      - usr/sbin/kea-config-init
+    prime:
+      - usr/sbin/kea-config-init
