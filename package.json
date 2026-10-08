@@ -1,0 +1,24 @@
+{
+  "name": "kea-config-init",
+  "version": "1.0.1",
+  "description": "Autoconfigurador de Kea DHCPv4: guarda backup en /etc/kea/kea-dhcp4.conf.bak y escribe la config (subnet 192.168.1.0/24 + reservas IP-MAC).",
+  "bin": {
+    "kea-config-init": "./src/kea-config-init"
+  },
+  "files": [
+    "src/kea-config-init",
+    "README.md"
+  ],
+  "os": [
+    "linux"
+  ],
+  "license": "GPL-3.0-or-later",
+  "homepage": "https://github.com/notcr12dev/kea-init-config#readme",
+  "bugs": {
+    "url": "https://github.com/notcr12dev/kea-init-config/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/notcr12dev/kea-init-config.git"
+  }
+}
